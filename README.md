@@ -1,69 +1,60 @@
+# The "Invisible Bug" Challenge (Debugging & Problem-Solving)
 
-1. The "Invisible Bug" Challenge (Debugging & Problem-Solving) 
+## Deployment or Configuration Regression
+A recent code or configuration change may have inadvertently altered the fraud detection model’s parameters or logic, resulting in both decreased accuracy and increased processing times.
 
-Reasons:
-1.Deployment or Configuration Regression:
+### Debugging:
+- Compare the current deployment with the previous version to identify any changes in code or configuration files.
+- Revert to a previous deployment version in a staging environment to see if the issues resolve.
+- Run unit and integration tests focused on the fraud detection component to ensure that expected model parameters and thresholds are being used.
+- Look for error messages or warnings during model initialization and inference calls.
 
-A recent code or configuration change may have inadvertently altered the fraud detection model’s parameters or logic. This could result in both decreased accuracy and increased processing times.
-Debugging:
+## Data Pipeline or Integration Errors
+Changes in how transaction data, location, or device fingerprinting data are ingested or processed could lead to data anomalies. Mismatches in data formats or missing fields can degrade the model’s performance and slow down processing.
 
-Compare the current deployment with the previous version to identify any changes in code or configuration files.
-Revert to a previous deployment version in a staging environment to see if the issues resolve.
-Run unit and integration tests focused on the fraud detection component to ensure that expected model parameters and thresholds are being used
-Look for error messages or warnings during model initialization and during inference calls.
+### Debugging:
+- Compare input data schemas pre- and post-deployment.
+- Validate data transformations (e.g., missing device fingerprints).
+- Log raw API input/output to identify discrepancies.
+- Test with controlled inputs: Run the API with known, controlled data inputs to isolate whether the issue stems from the data pipeline.
 
+## Performance Bottlenecks or Resource Constraints
+New logging, additional preprocessing, or inefficient code introduced in the deployment might be overloading system resources. This can cause unpredictable increases in response time and indirectly affect model accuracy if timeouts or data delays occur.
 
-2.Data Pipeline or Integration Errors
+### Debugging:
+- Monitor resource usage: Use performance monitoring tools to track CPU, memory, and network usage during peak times to identify potential bottlenecks.
+- Profiling: Profile the API code to pinpoint functions or queries that have become slower after deployment.
+- Stress testing: Simulate high loads to see if response times degrade further or if the model behaves unpredictably.
+- Check for new overheads: Review any new features or logging mechanisms that were added and assess if they are causing additional processing delays.
 
- Changes in how transaction data, location, or device fingerprinting data are ingested or processed could lead to data anomalies. For instance, mismatches in data formats or missing fields can degrade the model’s performance and slow down processing as the system handles unexpected inputs.
+## New Feature: Behavioral Biometrics Integrations
+Behavioral biometrics (e.g., typing speed, navigation patterns) can add an additional layer of security. Monitoring user interaction patterns helps create a profile of normal behavior.
 
-Debugging:
-Compare input data schemas pre- and post-deployment.
-Validate data transformations (e.g., missing device fingerprints)
-Log raw API input/output to identify discrepancies.
-Test with Controlled Inputs: Run the API with known, controlled data inputs to isolate whether the issue stems from the data pipeline.
+### Benefits:
+- Improved anomaly detection: Deviations in user behavior can be an early warning sign of fraud.
+- Complementary data source: Enhances existing fraud detection mechanisms.
+- Adaptive learning: The system learns and adapts to valid changes in behavior, minimizing false positives while maintaining high fraud detection accuracy.
 
-3.Performance Bottlenecks or Resource Constraints
+# Scalable Banking API - Transaction Processing & Consistency
 
- New logging, additional preprocessing, or inefficient code introduced in the deployment might be overloading system resources. This can cause unpredictable increases in response time and indirectly affect model accuracy if timeouts or data delays occur.
+## RESTful API Design
 
-Debugging:
-Monitor Resource Usage: Use performance monitoring tools to track CPU, memory, and network usage during peak times to identify potential bottlenecks.
-Profiling: Profile the API code to pinpoint functions or queries that have become slower after the deployment.
-Stress Testing: Simulate high loads to see if the response times degrade further or if the model behaves unpredictably.
-Check for New Overheads: Review any new features or logging mechanisms that were added, and assess if they are causing additional processing delays.
+### Endpoints & Operations
+#### Debit Operation:
+**POST /api/v1/accounts/{accountId}/debit**
+Accepts the amount to withdraw and returns the updated balance or an error message.
 
+#### Credit Operation:
+**POST /api/v1/accounts/{accountId}/credit**
+Accepts the deposit amount and returns the updated balance.
 
-New Feature:
-Behavioral biometrics Integrations:
-Aside from transaction history, location, and device fingerprinting, the inclusion of behavioral biometricss (e.g., typing speed, navigation patterns) can add an additional layer of security. Behavioral biometrics entails monitoring user interaction patterns—like typing rhythms, navigation patterns, and session dynamics—to create a profile of normal behavior.
-Benefits:
-Improved Anomaly Detection: Deviations in user behavior can be an early warning sign of fraud.
-Complementary Data Source: When paired with current features, it provides a richer understanding of the user's identity and behavior.
-Adaptive Learning: As time passes, the system can learn and adapt to valid changes in behavior, minimizing false positives while retaining high fraud detection accuracy.
+#### Balance Inquiry:
+**GET /api/v1/accounts/{accountId}/balance**
+Returns the current account balance.
 
-
-2. Scalable Banking API - Transaction Processing & Consistency 
-
-1. RESTful API Design:
-
-Endpoints & Operations:
-Debit Operation:
- POST /api/v1/accounts/{accountId}/debit
- Accepts the amount to withdraw. Returns the updated balance or a clear error (e.g., insufficient funds, account not found).
-
-
-Credit Operation:
- POST /api/v1/accounts/{accountId}/credit
- Accepts the deposit amount. Returns the updated balance.
-
-
-Balance Inquiry:
- GET /api/v1/accounts/{accountId}/balance
- Returns the current account balance.
-
-Sample request/response for debit:
-// Request
+### Sample Request/Response for Debit:
+#### Request:
+```json
 POST /api/v1/accounts/12345/debit
 {
   "amount": 100.00,
@@ -71,8 +62,10 @@ POST /api/v1/accounts/12345/debit
   "description": "ATM withdrawal",
   "transactionReference": "TXN123456789"
 }
+```
 
-// Success Response - 200 OK
+#### Success Response:
+```json
 {
   "transactionId": "7890123456",
   "status": "completed",
@@ -80,28 +73,32 @@ POST /api/v1/accounts/12345/debit
   "balance": 900.00,
   "timestamp": "2025-03-12T15:04:32Z"
 }
+```
 
-// Error Response - 400 Bad Request
+#### Error Response:
+```json
 {
   "error": "insufficient_funds",
   "message": "Account has insufficient funds for this transaction",
   "requestId": "REQ987654321",
   "timestamp": "2025-03-12T15:04:32Z"
 }
+```
 
-Atomicity:
- Each operation is wrapped within a database transaction. This guarantees that either the entire operation succeeds or, if any error occurs, the transaction is rolled back (i.e., no partial updates).Use write-ahead logging (WAL) to recover from crashes
+### Atomicity
+- Each operation is wrapped within a database transaction.
+- Ensures complete success or rollback.
+- Uses write-ahead logging (WAL) for crash recovery.
 
+### Concurrency
+- Handles multiple requests efficiently using row-level locks (e.g., SELECT FOR UPDATE).
+- Uses connection pooling to prevent race conditions.
 
-Concurrency:
- The API should efficiently handle multiple simultaneous requests by using proper locking (e.g., row-level locks with SELECT FOR UPDATE in a production-grade RDBMS) and connection pooling. This prevents race conditions when multiple requests attempt to update the same account.
+### Error Handling
+- Returns clear and concise error messages.
 
-
-Error Handling:
- Clear and concise error messages are returned if the account is not found, funds are insufficient, or if any unexpected errors occur during processing.
-
-
-2.Database Schema:
+## Database Schema
+```sql
 CREATE TABLE accounts (
   account_id VARCHAR(50) PRIMARY KEY,
   balance DECIMAL(19, 4) NOT NULL,
@@ -127,61 +124,56 @@ CREATE TABLE transactions (
 
 CREATE INDEX idx_account_id ON transactions(account_id);
 CREATE INDEX idx_created_at ON transactions(created_at);
+```
 
+## Ensuring Consistency
+- Use database transactions with proper isolation levels.
+- Implement two-phase commit for cross-account transfers.
+- Use optimistic locking with a version field.
+- Store transaction logs for audit and recovery.
+- Implement a transaction state machine with idempotent operations.
+- Use write-ahead logging (WAL) for crash recovery.
 
+## Performance Optimizations
+- Implement database sharding by account ID.
+- Use read replicas for balance inquiries.
+- Cache frequently accessed account information.
+- Use a message queue for asynchronous processing.
+- Implement connection pooling to reduce overhead.
+- Use prepared statements to optimize SQL parsing.
 
-b. Ensuring Consistency:
-Use database transactions with proper isolation levels
-Implement two-phase commit for cross-account transfers
-Use optimistic locking with version field to prevent race conditions
-Store transaction logs in a separate table for audit and recovery
-Implement a transaction state machine with idempotent operations
-Use write-ahead logging (WAL) to recover from crashes
-c. Performance Optimizations:
-Implement database sharding by account ID
-Use read replicas for balance inquiries
-Cache frequently accessed account information
-Use a message queue for asynchronous processing of non-critical operations
-Implement connection pooling to reduce database connection overhead
-Use prepared statements to reduce SQL parsing overhead
-3. Backend API Design - Rate Limiting for Banking Transactions
-Two different approaches to rate limiting:
-1. Token Bucket Algorithm
-Conceptually represents each user having a bucket of tokens
-Tokens are added at a constant rate (e.g., 5 tokens per second)
-Each request consumes one token
-If the bucket is empty, the request is rejected
-Benefits:
-Allows for bursts of traffic (up to bucket capacity)
-Simple to implement and understand
-Low memory footprint per user
-Drawbacks:
-Needs configuration of both rate and bucket size
-May allow too many requests in short bursts
-2. Sliding Window Counter
-Tracks requests in small time windows (e.g., 100ms slices)
-Counts requests in current window and proportion of previous window
-Benefits:
-More accurate rate limiting over time
-Prevents bursts that might slip through fixed windows
-Better handles edge cases around window boundaries
-Drawbacks:
-More complex to implement
-Higher memory usage due to tracking multiple windows
-Can be more CPU intensive
-Trade-offs between the approaches:
-Precision vs. Resource Usage
-Token Bucket is less precise at the window boundaries but uses less memory
-Sliding Window is more precise but requires storing timestamps for all recent requests
-Burst Handling
-Token Bucket naturally allows for controlled bursts (users can save up tokens)
-Sliding Window strictly enforces the rate over the whole window, preventing bursts
-Implementation Complexity
-Token Bucket is simpler to implement and understand
-Sliding Window requires more complex logic to handle the sliding aspect
-Graceful Degradation
-Token Bucket can be configured to allow occasional bursts during peak times
-Sliding Window maintains stricter fairness between users under high load
-Monitoring and Debugging
-Token Bucket state is easier to inspect (just tokens remaining)
+# Backend API Design - Rate Limiting for Banking Transactions
+
+## Approaches to Rate Limiting
+
+### Token Bucket Algorithm
+- Users have a bucket of tokens.
+- Tokens replenish at a constant rate.
+- Requests consume tokens; if empty, requests are rejected.
+
+#### Benefits:
+- Allows controlled bursts.
+- Simple to implement with low memory overhead.
+
+#### Drawbacks:
+- Needs rate and bucket size configuration.
+- May allow too many short bursts.
+
+### Sliding Window Counter
+- Tracks requests in time windows.
+- Counts requests in current and previous windows proportionally.
+
+#### Benefits:
+- More accurate over time.
+- Prevents excessive bursts.
+
+#### Drawbacks:
+- More complex to implement.
+- Higher memory and CPU usage.
+
+## Trade-offs
+- **Precision vs. Resource Usage:** Token Bucket is less precise but lightweight; Sliding Window is more accurate but resource-intensive.
+- **Burst Handling:** Token Bucket allows bursts; Sliding Window strictly enforces rate limits.
+- **Implementation Complexity:** Token Bucket is simpler; Sliding Window is more complex.
+- **Monitoring:** Token Bucket is easier to inspect; Sliding Window tracks detailed request timestamps.
 
